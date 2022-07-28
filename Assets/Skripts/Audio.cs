@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Events;
 
 public class Audio : MonoBehaviour
 {
@@ -11,37 +10,46 @@ public class Audio : MonoBehaviour
     [SerializeField] private float speed;
     [SerializeField] private float _maximumVolume;
     [SerializeField] private float _minimunVolume;
-    [SerializeField] private UnityEvent _reached;
-    [SerializeField] private float _target;
     private Coroutine _fadeInJob;
+    private float _target = 1f;
+
+    private void Start()
+    {
+        _audioSource.volume = _minimunVolume;
+    }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.TryGetComponent<Player>(out Player player))
+        _audioSource.Play();
+        StartCoroutine(FadeIn());
+    }
+
+    private void ChangeVolume()
+    { 
+        if (_audioSource.volume == 1f)
         {
-            _reached.Invoke();
-            WorkCoroutine();
+            _target = 0f;
+        }
+        else if (_audioSource.volume == 0f)
+        {
+            _target = 1f;
         }
     }
 
-    private IEnumerator FadeIn(float target)
+    private IEnumerator FadeIn()
     {
-        while(_audioSource.volume != target)
+        while (_audioSource.volume != _target)
         {
-            _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, target, speed * Time.deltaTime);
+            _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, _target, speed * Time.deltaTime);
+            ChangeVolume();
             yield return null;
         }
     }
 
-    private void WorkCoroutine()
+    private void OnTriggerExit2D(Collider2D collision)
     {
-        if(_fadeInJob != null)
-        {
-            StopCoroutine(_fadeInJob);
-        }
-        else
-        {
-            StartCoroutine(FadeIn(100f));
-        }
+        _audioSource.Stop();
+        StopCoroutine(FadeIn());
     }
 }
+
